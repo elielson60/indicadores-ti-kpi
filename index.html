@@ -84,63 +84,90 @@ body{
 /* ===== Layout ===== */
 .wrap{max-width:1320px; margin:0 auto; padding: 26px 28px 60px; position:relative; z-index:1;}
 
-/* ===== Filters ===== */
+/* ===== Filter toolbar ===== */
 .filters{
   background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 22px; margin-bottom: 22px; box-shadow: var(--shadow);
-  display:flex; flex-direction:column; gap:14px;
+  padding: 14px 18px; margin-bottom: 16px; box-shadow: var(--shadow);
+  position: sticky; top: 64px; z-index: 35;
 }
-.filter-group{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
-.filter-label{
-  font-family:'Space Grotesk', sans-serif; font-size:11.5px; font-weight:600; letter-spacing:.06em;
-  text-transform:uppercase; color: var(--text-soft); min-width: 132px;
+.filter-toolbar{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
 }
-.chips{display:flex; gap:8px; flex-wrap:wrap;}
-.chip{
-  border:1px solid var(--border); background:#fff; color: var(--navy-soft);
-  padding:7px 14px; border-radius:999px; font-size:13px; font-weight:500;
-  cursor:pointer; transition: all .15s ease; white-space:nowrap;
+.toolbar-eyebrow{
+  font-family:'Space Grotesk', sans-serif; font-size:11px; font-weight:700; letter-spacing:.07em;
+  text-transform:uppercase; color: var(--text-soft); margin-right:2px; white-space:nowrap;
 }
-.chip:hover{ border-color: var(--blue-light); transform: translateY(-1px); }
-.chip.active{
-  background: var(--navy); border-color: var(--navy); color:#fff;
-  box-shadow: 0 4px 10px -4px rgba(16,34,67,.5);
+.toolbar-spacer{ flex:1 1 auto; min-width:8px; }
+.result-count{
+  font-size:12.5px; font-weight:700; color: var(--blue); background:#EAF1F8;
+  padding:6px 13px; border-radius:999px; white-space:nowrap;
 }
-.reset-btn{
-  align-self:flex-start; background:transparent; border:1px dashed var(--border); color: var(--text-soft);
-  padding:7px 14px; border-radius:999px; font-size:12.5px; cursor:pointer; font-weight:600;
-  transition: all .15s ease;
-}
-.reset-btn:hover{ border-color: var(--red); color: var(--red); }
 
-/* ===== Menu de mês personalizado ===== */
-.month-dropdown{ position:relative; }
-.month-trigger{
-  display:flex; align-items:center; gap:9px;
-  background:#fff; border:1px solid var(--border); color: var(--navy);
-  padding:7px 14px; border-radius:999px; font-size:13px; font-weight:600;
-  cursor:pointer; transition: all .15s ease; font-family:'Inter', sans-serif;
+/* ---- Filter control / trigger ---- */
+.filter-control{ position:relative; }
+.filter-trigger{
+  display:flex; align-items:center; gap:7px;
+  background:#fff; border:1px solid var(--border); color: var(--navy-soft);
+  padding:8px 13px; border-radius:10px; font-size:13px; font-weight:600;
+  cursor:pointer; transition: all .15s ease; font-family:'Inter', sans-serif; white-space:nowrap;
 }
-.month-trigger:hover{ border-color: var(--blue-light); }
-.month-trigger .chev{ color: var(--text-soft); transition: transform .18s ease; flex-shrink:0; }
-.month-dropdown.open .month-trigger{
+.filter-trigger:hover{ border-color: var(--blue-light); color: var(--navy); }
+.ftrig-icon{ flex-shrink:0; color: var(--text-soft); transition: color .15s ease; }
+.filter-trigger:hover .ftrig-icon{ color: var(--blue); }
+.ftrig-chev{ color: var(--text-soft); transition: transform .18s ease; flex-shrink:0; margin-left:1px; }
+
+.filter-control.open .filter-trigger{
   background: var(--navy); border-color: var(--navy); color:#fff;
 }
-.month-dropdown.open .month-trigger .chev{ color:#fff; transform: rotate(180deg); }
+.filter-control.open .ftrig-icon{ color:#fff; }
+.filter-control.open .ftrig-chev{ color:#fff; transform: rotate(180deg); }
 
-.month-panel{
+.filter-control.engaged .filter-trigger{
+  background: #EAF1F8; border-color: #BBD3E8; color: var(--blue);
+}
+.filter-control.engaged .ftrig-icon{ color: var(--blue); }
+.filter-control.engaged.open .filter-trigger{ background: var(--navy); border-color: var(--navy); color:#fff; }
+.filter-control.engaged.open .ftrig-icon{ color:#fff; }
+
+/* ---- Dropdown panel (generic) ---- */
+.filter-panel{
   display:none; position:absolute; top: calc(100% + 8px); left:0; z-index:40;
   background:#fff; border:1px solid var(--border); border-radius:12px;
-  box-shadow: 0 14px 34px -10px rgba(16,34,67,.28);
-  padding:10px; min-width:300px;
+  box-shadow: 0 16px 38px -10px rgba(16,34,67,.30);
+  padding:6px; min-width:230px; max-height:340px; overflow-y:auto;
 }
-.month-dropdown.open .month-panel{ display:block; }
-.month-panel-all{
+.filter-control.open .filter-panel{ display:block; }
+.filter-option{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  width:100%; text-align:left; background:transparent; border:none;
+  padding:8px 10px; border-radius:8px; font-size:13px; color: var(--navy-soft);
+  cursor:pointer; transition: background .12s ease;
+}
+.filter-option:hover{ background: var(--bg); }
+.filter-option.selected{ color: var(--navy); font-weight:700; background:#EAF1F8; }
+.filter-option .opt-check{ color: var(--blue); opacity:0; flex-shrink:0; }
+.filter-option.selected .opt-check{ opacity:1; }
+.filter-option .opt-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.filter-option .opt-count{ font-size:11px; color: var(--text-soft); font-weight:500; flex-shrink:0; }
+.filter-option.selected .opt-count{ color: var(--blue); }
+.filter-divider{ height:1px; background: var(--border); margin:5px 4px; }
+
+/* ---- Período panel (custom layout) ---- */
+.panel-periodo{ min-width:300px; padding:10px; }
+.period-all-btn{
   width:100%; text-align:left; background:transparent; border:none; border-bottom:1px solid var(--border);
-  padding:9px 10px 11px; margin-bottom:8px; font-size:13px; font-weight:600; color:var(--navy);
+  padding:9px 10px 11px; margin-bottom:8px; font-size:13px; font-weight:700; color:var(--navy);
   cursor:pointer; border-radius:0;
 }
-.month-panel-all:hover{ color: var(--blue); }
+.period-all-btn:hover{ color: var(--blue); }
+.period-year-chips{ display:flex; gap:6px; margin-bottom:10px; }
+.period-year-chip{
+  background: var(--bg); border:1px solid transparent; color: var(--navy-soft);
+  padding:6px 13px; border-radius:999px; font-size:12.5px; font-weight:600; cursor:pointer;
+  transition: all .15s ease;
+}
+.period-year-chip:hover{ background:#E7EFF7; }
+.period-year-chip.active{ background: var(--navy); color:#fff; }
 .month-year-block{ margin-bottom:8px; }
 .month-year-block:last-child{ margin-bottom:0; }
 .month-year-label{
@@ -155,8 +182,33 @@ body{
 }
 .month-cell:hover{ background:#E7EFF7; }
 .month-cell.active{ background: var(--blue); color:#fff; font-weight:700; }
-.month-cell:disabled{ opacity:.32; cursor:not-allowed; }
+.month-cell:disabled{ opacity:.3; cursor:not-allowed; }
 .month-cell:disabled:hover{ background: var(--bg); }
+
+/* ---- Active filter chips row ---- */
+.active-filters{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-top:0; max-height:0; opacity:0; overflow:hidden;
+  transition: max-height .22s ease, opacity .18s ease, margin-top .22s ease;
+}
+.active-filters.show{ max-height:80px; opacity:1; margin-top:12px; }
+.active-chip{
+  display:flex; align-items:center; gap:7px;
+  background: var(--navy); color:#fff; padding:6px 8px 6px 13px; border-radius:999px;
+  font-size:12px; font-weight:600; animation: chipIn .18s ease;
+}
+.active-chip b{ font-weight:700; opacity:.65; margin-right:1px; font-weight:500; }
+.active-chip-x{
+  width:17px; height:17px; border-radius:50%; border:none; background:rgba(255,255,255,.18);
+  color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  font-size:12px; line-height:1; transition: background .15s ease;
+}
+.active-chip-x:hover{ background:rgba(255,255,255,.34); }
+@keyframes chipIn{ from{ opacity:0; transform: scale(.85); } to{ opacity:1; transform: scale(1); } }
+.clear-all-link{
+  font-size:12px; font-weight:700; color: var(--red); background:transparent; border:none;
+  cursor:pointer; padding:6px 4px; text-decoration:underline; text-underline-offset:2px;
+}
 
 /* ===== KPI grid ===== */
 .kpi-grid{
@@ -212,12 +264,17 @@ body{
   .kpi-grid{grid-template-columns: repeat(2,1fr);}
   .charts-grid{grid-template-columns: 1fr;}
   .span-2{grid-column: span 1;}
-  .filter-label{min-width:auto;}
 }
 @media (max-width: 560px){
   .kpi-grid{grid-template-columns: 1fr;}
   .topbar-inner{padding:14px 18px;}
   .wrap{padding:18px 16px 50px;}
+  .filters{ position:static; }
+  .toolbar-eyebrow{ width:100%; margin-bottom:2px; }
+  .toolbar-spacer{ display:none; }
+  .result-count{ order:10; margin-top:6px; }
+  .filter-trigger{ padding:8px 11px; font-size:12.5px; }
+  .filter-panel{ left:0; right:0; min-width:0; }
 }
 
 </style>
@@ -245,30 +302,50 @@ body{
 <main class="wrap">
 
   <section class="filters" id="filters">
-    <div class="filter-group">
-      <div class="filter-label">Período</div>
-      <div class="chips" id="chips-ano"></div>
-      <div class="month-dropdown" id="monthDropdown">
-        <button class="month-trigger" id="monthTrigger" type="button">
-          <span id="monthTriggerLabel">Mês: Todos</span>
-          <svg class="chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="filter-toolbar">
+      <span class="toolbar-eyebrow">Filtrar por</span>
+
+      <div class="filter-control" id="fc-periodo">
+        <button class="filter-trigger" id="trig-periodo" type="button">
+          <svg class="ftrig-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3 9.5H21" stroke="currentColor" stroke-width="1.7"/><path d="M8 3V6.5M16 3V6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="ftrig-label" id="lbl-periodo">Período</span>
+          <svg class="ftrig-chev" width="10" height="6" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div class="month-panel" id="monthPanel"></div>
+        <div class="filter-panel panel-periodo" id="panel-periodo"></div>
       </div>
+
+      <div class="filter-control" id="fc-emp">
+        <button class="filter-trigger" id="trig-emp" type="button">
+          <svg class="ftrig-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 21V6.5L12 3L20 6.5V21" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 21V14H15V21" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 10H9.01M15 10H15.01M12 10H12.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          <span class="ftrig-label" id="lbl-emp">Unidade</span>
+          <svg class="ftrig-chev" width="10" height="6" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="filter-panel" id="panel-emp"></div>
+      </div>
+
+      <div class="filter-control" id="fc-cat">
+        <button class="filter-trigger" id="trig-cat" type="button">
+          <svg class="ftrig-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20.5 11.5L12.5 3.5H4.5V11.5L12.5 19.5L20.5 11.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8" cy="7" r="1.3" fill="currentColor"/></svg>
+          <span class="ftrig-label" id="lbl-cat">Categoria</span>
+          <svg class="ftrig-chev" width="10" height="6" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="filter-panel" id="panel-cat"></div>
+      </div>
+
+      <div class="filter-control" id="fc-pri">
+        <button class="filter-trigger" id="trig-pri" type="button">
+          <svg class="ftrig-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 21V4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M5 4.5H18.5L15.5 9L18.5 13.5H5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          <span class="ftrig-label" id="lbl-pri">Prioridade</span>
+          <svg class="ftrig-chev" width="10" height="6" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="filter-panel" id="panel-pri"></div>
+      </div>
+
+      <div class="toolbar-spacer"></div>
+      <div class="result-count" id="resultCount">1.114 chamados</div>
     </div>
-    <div class="filter-group">
-      <div class="filter-label">Unidade de negócio</div>
-      <div class="chips" id="chips-emp"></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Categoria</div>
-      <div class="chips" id="chips-cat"></div>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Prioridade</div>
-      <div class="chips" id="chips-pri"></div>
-    </div>
-    <button class="reset-btn" id="resetBtn">Limpar filtros</button>
+
+    <div class="active-filters" id="activeFilters"></div>
   </section>
 
   <section class="kpi-grid" id="kpiGrid"></section>
@@ -394,35 +471,10 @@ const MESES_PT = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'J
 const MESES_ORDEM = ['01','02','03','04','05','06','07','08','09','10','11','12']; // ordem fixa — não usar Object.keys (reordena chaves numéricas tipo '10','11','12')
 function fmtMes(m){ const [y,mm] = m.split('-'); return MESES_PT[mm] + '/' + y.slice(2); }
 const ALL_MONTHS = [...new Set(TICKETS.map(t=>t.mes))].sort();
+const ANOS = [...new Set(ALL_MONTHS.map(m=>m.split('-')[0]))].sort();
 
 const fmtInt = n => n.toLocaleString('pt-BR');
 const fmtPct = n => n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
-
-/* ====== Construção dos chips ====== */
-function buildChips(containerId, field, prettyMap){
-  const values = [...new Set(TICKETS.map(t=>t[field]))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const container = document.getElementById(containerId);
-  const allChip = makeChip('Todas', true);
-  container.appendChild(allChip);
-  values.forEach(v=>{
-    const label = prettyMap && prettyMap[v] ? prettyMap[v] : v;
-    container.appendChild(makeChip(v, false, label));
-  });
-
-  function makeChip(val, isAll, label){
-    const el = document.createElement('button');
-    el.className = 'chip' + (isAll ? ' active' : '');
-    el.textContent = label || val;
-    el.dataset.val = val;
-    el.addEventListener('click', ()=>{
-      state[field === 'emp' ? 'emp' : field === 'cat' ? 'cat' : 'pri'] = val;
-      [...container.children].forEach(c=>c.classList.remove('active'));
-      el.classList.add('active');
-      render();
-    });
-    return el;
-  }
-}
 
 const CAT_LABELS = {
   'Sistemas e Aplicações Corporativas':'Sistemas / ERP',
@@ -436,58 +488,153 @@ const CAT_LABELS = {
   'Dúvidas e Procedimentos Operacionais':'Dúvidas',
   'Não informado':'Não informado'
 };
+const PRI_ORDER = ['Urgente','Alta','Normal','Baixa'];
 
-buildChips('chips-emp', 'emp');
-buildChips('chips-cat', 'cat', CAT_LABELS);
-buildChips('chips-pri', 'pri');
-
-/* ====== Filtro de Ano (chips) ====== */
-const ANOS = [...new Set(ALL_MONTHS.map(m=>m.split('-')[0]))].sort();
-(function buildAnoChips(){
-  const container = document.getElementById('chips-ano');
-  function makeChip(val, isAll){
-    const el = document.createElement('button');
-    el.className = 'chip' + (isAll ? ' active' : '');
-    el.textContent = isAll ? 'Todos os anos' : val;
-    el.addEventListener('click', ()=>{
-      state.ano = val;
-      state.mes = 'Todas'; // reinicia o mês ao trocar de ano
-      [...container.children].forEach(c=>c.classList.remove('active'));
-      el.classList.add('active');
-      buildMonthPanel();
-      updateMonthTriggerLabel();
-      render();
-    });
-    return el;
-  }
-  container.appendChild(makeChip('Todas', true));
-  ANOS.forEach(a => container.appendChild(makeChip(a, false)));
-})();
-
-/* ====== Menu de mês personalizado (dropdown) ====== */
-const monthDropdown = document.getElementById('monthDropdown');
-const monthTrigger = document.getElementById('monthTrigger');
-const monthTriggerLabel = document.getElementById('monthTriggerLabel');
-const monthPanel = document.getElementById('monthPanel');
-
-function updateMonthTriggerLabel(){
-  monthTriggerLabel.textContent = state.mes === 'Todas' ? 'Mês: Todos' : 'Mês: ' + fmtMes(state.mes);
+/* ====== Filtro cruzado (ignora um campo para contar opções) ====== */
+function getFilteredExcept(exclude){
+  return TICKETS.filter(t =>
+    (exclude==='emp' || state.emp==='Todas' || t.emp===state.emp) &&
+    (exclude==='cat' || state.cat==='Todas' || t.cat===state.cat) &&
+    (exclude==='pri' || state.pri==='Todas' || t.pri===state.pri) &&
+    (exclude==='periodo' || state.ano==='Todas' || t.mes.startsWith(state.ano)) &&
+    (exclude==='periodo' || state.mes==='Todas' || t.mes===state.mes)
+  );
 }
 
-function buildMonthPanel(){
-  monthPanel.innerHTML = '';
+/* ====== Infraestrutura genérica de dropdown ====== */
+const allControls = [];
+function registerControl(id){
+  const el = document.getElementById(id);
+  const trigger = el.querySelector('.filter-trigger');
+  trigger.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const willOpen = !el.classList.contains('open');
+    allControls.forEach(c=>c.classList.remove('open'));
+    if(willOpen) el.classList.add('open');
+  });
+  allControls.push(el);
+  return el;
+}
+document.addEventListener('click', ()=> allControls.forEach(c=>c.classList.remove('open')));
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') allControls.forEach(c=>c.classList.remove('open')); });
+
+const fcEmp = registerControl('fc-emp');
+const fcCat = registerControl('fc-cat');
+const fcPri = registerControl('fc-pri');
+const fcPeriodo = registerControl('fc-periodo');
+
+/* ====== Dropdown simples (Unidade / Categoria / Prioridade) ====== */
+function buildSimpleFilter(field, panelId, trigId, lblId, defaultLabel, prettyMap, customOrder){
+  const panel = document.getElementById(panelId);
+  const trig = document.getElementById(trigId);
+  const lbl = document.getElementById(lblId);
+  const control = trig.closest('.filter-control');
+
+  let values = [...new Set(TICKETS.map(t=>t[field]))];
+  if(customOrder){
+    values.sort((a,b)=> customOrder.indexOf(a) - customOrder.indexOf(b));
+  } else {
+    values.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  }
+
+  function paint(){
+    const counts = getFilteredExcept(field);
+    const totalCount = counts.length;
+    panel.innerHTML = '';
+    panel.appendChild(optionRow('Todas', defaultLabel, totalCount, state[field]==='Todas'));
+    const byVal = {};
+    counts.forEach(t=>{ byVal[t[field]] = (byVal[t[field]]||0)+1; });
+    values.forEach(v=>{
+      panel.appendChild(optionRow(v, (prettyMap && prettyMap[v]) || v, byVal[v]||0, state[field]===v));
+    });
+  }
+
+  function optionRow(val, label, count, selected){
+    const row = document.createElement('button');
+    row.className = 'filter-option' + (selected ? ' selected' : '');
+    row.type = 'button';
+    row.innerHTML = `
+      <svg class="opt-check" width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.2 11.5L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="opt-name">${label}</span>
+      <span class="opt-count">${fmtInt(count)}</span>
+    `;
+    row.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      state[field] = val;
+      updateTriggerLabel();
+      control.classList.remove('open');
+      paint();
+      render();
+      renderActiveFilters();
+    });
+    return row;
+  }
+
+  function updateTriggerLabel(){
+    const engaged = state[field] !== 'Todas';
+    control.classList.toggle('engaged', engaged);
+    lbl.textContent = engaged ? ((prettyMap && prettyMap[state[field]]) || state[field]) : defaultLabel;
+  }
+
+  trig.addEventListener('click', paint); // recalcula contagens cruzadas toda vez que abre
+  paint();
+  updateTriggerLabel();
+
+  return { paint, updateTriggerLabel };
+}
+
+const filterEmp = buildSimpleFilter('emp', 'panel-emp', 'trig-emp', 'lbl-emp', 'Unidade');
+const filterCat = buildSimpleFilter('cat', 'panel-cat', 'trig-cat', 'lbl-cat', 'Categoria', CAT_LABELS);
+const filterPri = buildSimpleFilter('pri', 'panel-pri', 'trig-pri', 'lbl-pri', 'Prioridade', null, PRI_ORDER);
+
+/* ====== Dropdown de Período (Ano + Mês combinados) ====== */
+const periodoPanel = document.getElementById('panel-periodo');
+const periodoTrig = document.getElementById('trig-periodo');
+const periodoLbl = document.getElementById('lbl-periodo');
+
+function updatePeriodoLabel(){
+  const engaged = state.ano !== 'Todas' || state.mes !== 'Todas';
+  fcPeriodo.classList.toggle('engaged', engaged);
+  if(state.mes !== 'Todas') periodoLbl.textContent = fmtMes(state.mes);
+  else if(state.ano !== 'Todas') periodoLbl.textContent = state.ano;
+  else periodoLbl.textContent = 'Período';
+}
+
+function buildPeriodoPanel(){
+  periodoPanel.innerHTML = '';
 
   const allBtn = document.createElement('button');
-  allBtn.className = 'month-panel-all';
+  allBtn.className = 'period-all-btn';
   allBtn.textContent = state.ano === 'Todas' ? 'Todos os períodos' : `Ano inteiro de ${state.ano}`;
   allBtn.addEventListener('click', ()=>{
     state.mes = 'Todas';
-    updateMonthTriggerLabel();
-    closeMonthPanel();
+    updatePeriodoLabel();
+    fcPeriodo.classList.remove('open');
     render();
-    refreshMonthActiveStates();
+    renderActiveFilters();
   });
-  monthPanel.appendChild(allBtn);
+  periodoPanel.appendChild(allBtn);
+
+  const yearRow = document.createElement('div');
+  yearRow.className = 'period-year-chips';
+  function yearChip(val, label){
+    const c = document.createElement('button');
+    c.className = 'period-year-chip' + (state.ano===val ? ' active' : '');
+    c.textContent = label;
+    c.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      state.ano = val;
+      state.mes = 'Todas';
+      updatePeriodoLabel();
+      buildPeriodoPanel();
+      render();
+      renderActiveFilters();
+    });
+    return c;
+  }
+  yearRow.appendChild(yearChip('Todas','Todos os anos'));
+  ANOS.forEach(a=> yearRow.appendChild(yearChip(a, a)));
+  periodoPanel.appendChild(yearRow);
 
   const anosParaExibir = state.ano === 'Todas' ? ANOS : [state.ano];
   anosParaExibir.forEach(ano=>{
@@ -510,52 +657,77 @@ function buildMonthPanel(){
       cell.disabled = !exists;
       cell.dataset.key = key;
       if(exists){
-        cell.addEventListener('click', ()=>{
+        cell.addEventListener('click', (e)=>{
+          e.stopPropagation();
           state.mes = key;
-          updateMonthTriggerLabel();
-          closeMonthPanel();
+          updatePeriodoLabel();
+          fcPeriodo.classList.remove('open');
           render();
-          refreshMonthActiveStates();
+          renderActiveFilters();
         });
       }
       grid.appendChild(cell);
     });
     block.appendChild(grid);
-    monthPanel.appendChild(block);
+    periodoPanel.appendChild(block);
   });
 }
 
-function refreshMonthActiveStates(){
-  monthPanel.querySelectorAll('.month-cell').forEach(c=>{
-    c.classList.toggle('active', c.dataset.key === state.mes);
+periodoTrig.addEventListener('click', buildPeriodoPanel);
+buildPeriodoPanel();
+updatePeriodoLabel();
+
+/* ====== Chips de filtros ativos ====== */
+function renderActiveFilters(){
+  const wrap = document.getElementById('activeFilters');
+  wrap.innerHTML = '';
+  const active = [];
+  if(state.emp!=='Todas') active.push({ key:'emp', text: state.emp });
+  if(state.cat!=='Todas') active.push({ key:'cat', text: CAT_LABELS[state.cat] || state.cat });
+  if(state.pri!=='Todas') active.push({ key:'pri', text: state.pri });
+  if(state.ano!=='Todas' || state.mes!=='Todas'){
+    active.push({ key:'periodo', text: state.mes!=='Todas' ? fmtMes(state.mes) : state.ano });
+  }
+
+  active.forEach(a=>{
+    const chip = document.createElement('div');
+    chip.className = 'active-chip';
+    chip.innerHTML = `<span>${a.text}</span>`;
+    const x = document.createElement('button');
+    x.className = 'active-chip-x';
+    x.innerHTML = '&times;';
+    x.addEventListener('click', ()=>{
+      if(a.key==='periodo'){ state.ano='Todas'; state.mes='Todas'; updatePeriodoLabel(); buildPeriodoPanel(); }
+      else { state[a.key]='Todas'; }
+      if(a.key==='emp'){ filterEmp.updateTriggerLabel(); filterEmp.paint(); }
+      if(a.key==='cat'){ filterCat.updateTriggerLabel(); filterCat.paint(); }
+      if(a.key==='pri'){ filterPri.updateTriggerLabel(); filterPri.paint(); }
+      render();
+      renderActiveFilters();
+    });
+    chip.appendChild(x);
+    wrap.appendChild(chip);
   });
+
+  if(active.length){
+    const clearAll = document.createElement('button');
+    clearAll.className = 'clear-all-link';
+    clearAll.textContent = 'Limpar tudo';
+    clearAll.addEventListener('click', ()=>{
+      state.emp='Todas'; state.cat='Todas'; state.pri='Todas'; state.ano='Todas'; state.mes='Todas';
+      filterEmp.updateTriggerLabel(); filterEmp.paint();
+      filterCat.updateTriggerLabel(); filterCat.paint();
+      filterPri.updateTriggerLabel(); filterPri.paint();
+      updatePeriodoLabel(); buildPeriodoPanel();
+      render();
+      renderActiveFilters();
+    });
+    wrap.appendChild(clearAll);
+  }
+
+  wrap.classList.toggle('show', active.length > 0);
 }
-
-function openMonthPanel(){ monthDropdown.classList.add('open'); }
-function closeMonthPanel(){ monthDropdown.classList.remove('open'); }
-
-monthTrigger.addEventListener('click', (e)=>{
-  e.stopPropagation();
-  monthDropdown.classList.contains('open') ? closeMonthPanel() : openMonthPanel();
-});
-document.addEventListener('click', (e)=>{
-  if(!monthDropdown.contains(e.target)) closeMonthPanel();
-});
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMonthPanel(); });
-
-buildMonthPanel();
-updateMonthTriggerLabel();
-
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  state.emp='Todas'; state.cat='Todas'; state.pri='Todas'; state.ano='Todas'; state.mes='Todas';
-  document.querySelectorAll('.chips').forEach(c=>{
-    [...c.children].forEach((chip,i)=> chip.classList.toggle('active', i===0));
-  });
-  updateMonthTriggerLabel();
-  buildMonthPanel();
-  closeMonthPanel();
-  render();
-});
+renderActiveFilters();
 
 /* ====== Filtro principal ====== */
 function getFiltered(){
@@ -753,6 +925,10 @@ const chartAplicativo = new Chart(ctxAplicativo, {
 function render(){
   const data = getFiltered();
   const total = data.length;
+
+  const resultCountEl = document.getElementById('resultCount');
+  if(resultCountEl) resultCountEl.textContent = `${fmtInt(total)} chamado${total===1?'':'s'}`;
+
   const resolvidos = data.filter(t=>t.fin).length;
   const pendentes = total - resolvidos;
   const atrasados = data.filter(t=>t.atr).length;
