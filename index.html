@@ -284,10 +284,18 @@ body{
 
     <div class="chart-card">
       <div class="chart-head">
-        <h3>SLA — cumprido x violado</h3>
+        <h3>SLA de Resolução — cumprido x violado</h3>
         <span class="chart-tag">Rosca</span>
       </div>
       <div class="chart-canvas-wrap" style="height:240px"><canvas id="chartSLA"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>SLA de Inicialização — cumprido x violado</h3>
+        <span class="chart-tag">Rosca</span>
+      </div>
+      <div class="chart-canvas-wrap" style="height:240px"><canvas id="chartSLAIni"></canvas></div>
     </div>
 
     <div class="chart-card">
@@ -316,7 +324,7 @@ body{
 
     <div class="chart-card span-2">
       <div class="chart-head">
-        <h3>Evolução mensal do SLA cumprido</h3>
+        <h3>Evolução mensal do SLA de Resolução cumprido</h3>
         <span class="chart-tag">Linha · Meta 95%</span>
       </div>
       <div class="chart-canvas-wrap" style="height:240px"><canvas id="chartSLAEvol"></canvas></div>
@@ -543,10 +551,10 @@ const KPI_DEFS = [
   {id:'kResolvidos', label:'Resolvidos', cls:'kpi-green', emoji:'🟢'},
   {id:'kAndamento', label:'Em andamento', cls:'kpi-amber', emoji:'🟡'},
   {id:'kAtrasados', label:'Atrasados', cls:'kpi-red', emoji:'🔴'},
-  {id:'kSlaOk', label:'SLA cumprido', cls:'kpi-green', emoji:'🟢'},
-  {id:'kSlaViol', label:'SLA violado', cls:'kpi-red', emoji:'🔴'},
+  {id:'kSlaOk', label:'SLA Resolução cumprido', cls:'kpi-green', emoji:'🟢'},
+  {id:'kSlaViol', label:'SLA Resolução violado', cls:'kpi-red', emoji:'🔴'},
   {id:'kTmr', label:'Tempo médio resolução', cls:'kpi-amber', emoji:'🟡'},
-  {id:'kSlaIni', label:'SLA 1º atendimento', cls:'kpi-red', emoji:'🔴'},
+  {id:'kSlaIni', label:'SLA Inicialização cumprido', cls:'kpi-red', emoji:'🔴'},
   {id:'kSat', label:'Satisfação do usuário', cls:'kpi-green', emoji:'🟢'},
 ];
 KPI_DEFS.forEach(k=>{
@@ -597,7 +605,15 @@ const chartMonthly = new Chart(ctxMonthly, {
 const ctxSLA = document.getElementById('chartSLA').getContext('2d');
 const chartSLA = new Chart(ctxSLA, {
   type:'doughnut',
-  data:{ labels:['SLA cumprido','SLA violado','Sem SLA'], datasets:[{ data:[0,0,0], backgroundColor:['#1F8A57','#C0392B','#C7CEDA'], borderColor:'#fff', borderWidth:3 }] },
+  data:{ labels:['SLA Resolução cumprido','SLA Resolução violado','Sem SLA'], datasets:[{ data:[0,0,0], backgroundColor:['#1F8A57','#C0392B','#C7CEDA'], borderColor:'#fff', borderWidth:3 }] },
+  options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
+    plugins:{ legend:{ position:'bottom' } } }
+});
+
+const ctxSLAIni = document.getElementById('chartSLAIni').getContext('2d');
+const chartSLAIni = new Chart(ctxSLAIni, {
+  type:'doughnut',
+  data:{ labels:['SLA Inicialização cumprido','SLA Inicialização violado','Sem SLA'], datasets:[{ data:[0,0,0], backgroundColor:['#2E5C8A','#C97D0C','#C7CEDA'], borderColor:'#fff', borderWidth:3 }] },
   options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
     plugins:{ legend:{ position:'bottom' } } }
 });
@@ -632,7 +648,7 @@ const ctxSLAEvol = document.getElementById('chartSLAEvol').getContext('2d');
 const chartSLAEvol = new Chart(ctxSLAEvol, {
   type:'line',
   data:{ labels:[], datasets:[
-    { label:'SLA cumprido (%)', data:[], borderColor:'#102243', backgroundColor:'rgba(16,34,67,.05)', fill:true, tension:.35, pointRadius:3, borderWidth:2.4 },
+    { label:'SLA Resolução cumprido (%)', data:[], borderColor:'#102243', backgroundColor:'rgba(16,34,67,.05)', fill:true, tension:.35, pointRadius:3, borderWidth:2.4 },
     { label:'Meta diretoria (95%)', data:[], borderColor:'#C0392B', borderDash:[6,4], pointRadius:0, borderWidth:1.6 },
   ]},
   options:{ responsive:true, maintainAspectRatio:false,
@@ -701,10 +717,15 @@ function render(){
   chartMonthly.update();
   emptyState('chartMonthly', total===0);
 
-  /* ---- Chart: SLA donut ---- */
+  /* ---- Chart: SLA Resolução donut ---- */
   chartSLA.data.datasets[0].data = [slaOk, slaViol, slaNp];
   chartSLA.update();
   emptyState('chartSLA', total===0);
+
+  /* ---- Chart: SLA Inicialização donut ---- */
+  chartSLAIni.data.datasets[0].data = [slaIniOk, slaIniViol, total - slaIniOk - slaIniViol];
+  chartSLAIni.update();
+  emptyState('chartSLAIni', total===0);
 
   /* ---- Chart: categoria ---- */
   const catCount = {};
