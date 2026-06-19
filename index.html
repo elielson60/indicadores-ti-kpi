@@ -1884,7 +1884,7 @@ body{
     <div class="chart-card span-2">
       <div class="chart-head">
         <h3>Evolução mensal do SLA de Resolução cumprido</h3>
-        <span class="chart-tag">Linha · Meta 95%</span>
+        <span class="chart-tag">Linha · Meta 90%</span>
       </div>
       <div class="chart-canvas-wrap" style="height:240px"><canvas id="chartSLAEvol"></canvas></div>
     </div>
@@ -2564,7 +2564,7 @@ const chartSLAEvol = new Chart(ctxSLAEvol, {
   type:'line',
   data:{ labels:[], datasets:[
     { label:'SLA Resolução cumprido (%)', data:[], borderColor:'#102243', backgroundColor:'rgba(16,34,67,.05)', fill:true, tension:.35, pointRadius:3, borderWidth:2.4 },
-    { label:'Meta diretoria (95%)', data:[], borderColor:'#C0392B', borderDash:[6,4], pointRadius:0, borderWidth:1.6 },
+    { label:'Meta diretoria (90%)', data:[], borderColor:'#C0392B', borderDash:[6,4], pointRadius:0, borderWidth:1.6 },
   ]},
   options:{ responsive:true, maintainAspectRatio:false,
     layout:{ padding:{ top:16 } },
@@ -2640,11 +2640,11 @@ function renderActionPlan(m){
 
   const items = [];
 
-  if(m.slaPct < 95){
+  if(m.slaPct < 90){
     items.push({
-      sev: m.slaPct < 80 ? 'red' : 'amber',
+      sev: m.slaPct < 70 ? 'red' : 'amber',
       title: 'SLA de Resolução abaixo da meta',
-      metric: `Atual: <b>${fmtPct(m.slaPct)}</b> · Meta: &gt; 95% · ${fmtInt(m.slaViol)} chamado${m.slaViol===1?'':'s'} violado${m.slaViol===1?'':'s'}`,
+      metric: `Atual: <b>${fmtPct(m.slaPct)}</b> · Meta: &gt; 90% · ${fmtInt(m.slaViol)} chamado${m.slaViol===1?'':'s'} violado${m.slaViol===1?'':'s'}`,
       actions: [
         'Revisar os prazos de SLA por categoria, priorizando ERP e equipamentos críticos.',
         'Criar alerta automático quando um chamado atingir 70% do prazo restante.',
@@ -2653,15 +2653,29 @@ function renderActionPlan(m){
     });
   }
 
-  if(m.slaIniPct < 90){
+  if(m.slaIniPct < 70){
     items.push({
-      sev: m.slaIniPct < 60 ? 'red' : 'amber',
+      sev: m.slaIniPct < 50 ? 'red' : 'amber',
       title: 'SLA de Inicialização abaixo da meta',
-      metric: `Atual: <b>${fmtPct(m.slaIniPct)}</b> · Meta: &gt; 90% · ${fmtInt(m.slaIniOk)} chamado${m.slaIniOk===1?'':'s'} cumprido${m.slaIniOk===1?'':'s'}`,
+      metric: `Atual: <b>${fmtPct(m.slaIniPct)}</b> · Meta: &gt; 70% · ${fmtInt(m.slaIniOk)} chamado${m.slaIniOk===1?'':'s'} cumprido${m.slaIniOk===1?'':'s'}`,
       actions: [
         'Implantar fila automática de distribuição de chamados por categoria e empresa.',
         'Definir responsável de plantão para o primeiro atendimento em até 30 minutos.',
         'Acompanhar diariamente os chamados sem atendente vinculado.'
+      ]
+    });
+  }
+
+  const backlogPct = m.total ? (m.pendentes / m.total * 100) : 0;
+  if(backlogPct >= 10){
+    items.push({
+      sev: backlogPct >= 20 ? 'red' : 'amber',
+      title: 'Backlog de chamados acima da meta',
+      metric: `Atual: <b>${fmtPct(backlogPct)}</b> · Meta: &lt; 10% · ${fmtInt(m.pendentes)} chamado${m.pendentes===1?'':'s'} pendente${m.pendentes===1?'':'s'}`,
+      actions: [
+        'Reforçar a equipe ou redistribuir prioridades para reduzir o volume em aberto.',
+        'Auditar o backlog semanalmente para evitar acúmulo contínuo.',
+        'Identificar categorias que mais alimentam o backlog e atacar a causa raiz.'
       ]
     });
   }
@@ -2760,12 +2774,12 @@ function render(){
   /* ---- KPI cards ---- */
   setKpi('kTotal', total, false, false, `${fmtInt(total)} no filtro atual`);
   setKpi('kResolvidos', resolvidos, false, false, total ? fmtPct(resolvidos/total*100) + ' da base' : '—');
-  setKpi('kAndamento', pendentes, false, false, total ? fmtPct(pendentes/total*100) + ' da base' : '—');
+  setKpi('kAndamento', pendentes, false, false, total ? `${fmtPct(pendentes/total*100)} da base | meta < 10%` : '—');
   setKpi('kAtrasados', atrasados, false, false, pendentes ? fmtPct(atrasados/pendentes*100) + ' do backlog' : 'sem backlog');
-  setKpi('kSlaOk', slaPct, true, false, `${fmtInt(slaOk)} chamados | meta > 95%`);
-  setKpi('kSlaViol', 100-slaPct, true, false, `${fmtInt(slaViol)} chamados | meta < 5%`);
+  setKpi('kSlaOk', slaPct, true, false, `${fmtInt(slaOk)} chamados | meta > 90%`);
+  setKpi('kSlaViol', 100-slaPct, true, false, `${fmtInt(slaViol)} chamados | meta < 10%`);
   setKpi('kTmr', median, false, true, 'Mediana | meta < 8h');
-  setKpi('kSlaIni', slaIniPct, true, false, `${fmtInt(slaIniOk)} chamados | meta > 90%`);
+  setKpi('kSlaIni', slaIniPct, true, false, `${fmtInt(slaIniOk)} chamados | meta > 70%`);
   setKpi('kSat', satPct, true, false, `${fmtInt(avaliados.length)} avaliações | meta > 90%`);
 
   function setKpi(id, val, isPct, isHora, sub){
@@ -2832,7 +2846,7 @@ function render(){
   });
   chartSLAEvol.data.labels = ALL_MONTHS.map(fmtMes);
   chartSLAEvol.data.datasets[0].data = ALL_MONTHS.map(m=> slaTotMes[m] ? (slaOkMes[m]/slaTotMes[m]*100) : null);
-  chartSLAEvol.data.datasets[1].data = ALL_MONTHS.map(()=>95);
+  chartSLAEvol.data.datasets[1].data = ALL_MONTHS.map(()=>90);
   chartSLAEvol.update();
   emptyState('chartSLAEvol', total===0);
 
