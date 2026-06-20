@@ -120,30 +120,55 @@ def api_get(path, params=None):
 # 1) CAMPOS PERSONALIZADOS — descobre o ID de cada campo pelo nome
 # ============================================================
 
+def list_categories(department_id):
+    """Retorna lista de {id, name} das categorias de um departamento."""
+    result = api_get("/department/category/list", {"department_id": department_id})
+    if result.get("error"):
+        print("  aviso: não foi possível listar categorias:", result.get("message"))
+        return []
+    return result.get("data") or []
+
+
 def load_custom_field_ids(department_id):
     """Retorna um dict {nome_do_campo: id_do_campo} para os campos de
-    'Chamado Externo' (ticket) vinculados ao departamento informado."""
+    'Chamado Externo' (ticket) vinculados ao departamento informado.
+    Os campos podem estar atrelados ao departamento (sem categoria) e/ou
+    a cada categoria especificamente, então consultamos todas as
+    combinações e juntamos os resultados."""
     if not department_id:
         print("  aviso: sem department_id, não é possível carregar campos personalizados.")
         return {}
 
+    name_to_id = {}
+
+    def merge_fields(result):
+        data = result.get("data") or {}
+        items = data.get("ticket") or []
+        for item in items:
+            label = item.get("label") or item.get("name")
+            field_id = item.get("id")
+            if label and field_id:
+                name_to_id[label] = field_id
+
+    # 1) Campos vinculados ao departamento sem categoria definida
     result = api_get("/custom_field/department/list", {"department_id": department_id})
     if result.get("error"):
-        print("  aviso: não foi possível carregar campos personalizados:", result.get("message"))
-        return {}
+        print("  aviso (sem categoria):", result.get("message"))
+    else:
+        merge_fields(result)
 
-    name_to_id = {}
-    data = result.get("data") or {}
-    items = data.get("ticket") or []
-    for item in items:
-        label = item.get("label") or item.get("name")
-        field_id = item.get("id")
-        if label and field_id:
-            name_to_id[label] = field_id
+    # 2) Campos vinculados a cada categoria do departamento
+    categories = list_categories(department_id)
+    print(f"  {len(categories)} categorias encontradas no departamento.")
+    for cat in categories:
+        cat_id = cat.get("id")
+        result = api_get("/custom_field/department/list",
+                          {"department_id": department_id, "category_id": cat_id})
+        if not result.get("error"):
+            merge_fields(result)
 
     if not name_to_id:
-        print("  aviso: nenhum campo encontrado. Resposta bruta para depuração:")
-        print(" ", json.dumps(result, ensure_ascii=False)[:800])
+        print("  aviso: nenhum campo encontrado em nenhuma categoria.")
 
     return name_to_id
 
