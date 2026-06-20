@@ -120,20 +120,26 @@ def api_get(path, params=None):
 # 1) CAMPOS PERSONALIZADOS — descobre o ID de cada campo pelo nome
 # ============================================================
 
-def load_custom_field_ids():
-    """Retorna um dict {nome_do_campo: id_do_campo}."""
-    result = api_get("/custom_field/department/list")
+def load_custom_field_ids(department_id):
+    """Retorna um dict {nome_do_campo: id_do_campo} para os campos de
+    'Chamado Externo' (ticket) vinculados ao departamento informado."""
+    if not department_id:
+        print("  aviso: sem department_id, não é possível carregar campos personalizados.")
+        return {}
+
+    result = api_get("/custom_field/department/list", {"department_id": department_id})
     if result.get("error"):
-        print("Aviso: não foi possível carregar campos personalizados:", result.get("message"))
+        print("  aviso: não foi possível carregar campos personalizados:", result.get("message"))
         return {}
 
     name_to_id = {}
-    items = result.get("data") or result.get("custom_fields") or []
+    data = result.get("data") or {}
+    items = data.get("ticket") or []
     for item in items:
-        name = item.get("name") or item.get("title")
+        label = item.get("label") or item.get("name")
         field_id = item.get("id")
-        if name and field_id:
-            name_to_id[name] = field_id
+        if label and field_id:
+            name_to_id[label] = field_id
 
     if not name_to_id:
         print("  aviso: nenhum campo encontrado. Resposta bruta para depuração:")
@@ -142,21 +148,40 @@ def load_custom_field_ids():
     return name_to_id
 
 
+def _normalize(s):
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode("ascii")
+    return s.lower().strip()
+
+
 def find_department_id(name_filter):
-    """Busca o ID do departamento cujo nome contém `name_filter` (ex: 'Informática')."""
+    """Busca o ID do departamento cujo nome contém `name_filter` (ex: 'Informática').
+    Tenta também variações sem acento e palavras-chave alternativas comuns
+    (TI, Tecnologia, Suporte) caso o nome exato não seja encontrado."""
     result = api_get("/department/list")
     if result.get("error"):
         print("Aviso: não foi possível listar departamentos:", result.get("message"))
         return None
 
     items = result.get("data") or []
-    for item in items:
-        name = (item.get("name") or "")
-        if name_filter.lower() in name.lower():
-            print(f"  departamento encontrado: '{name}' (id={item.get('id')})")
-            return item.get("id")
+    candidates = [name_filter, "tecnologia", "informatica", "ti", "suporte"]
 
-    print(f"  aviso: nenhum departamento com nome contendo '{name_filter}' foi encontrado.")
+    for candidate in candidates:
+        norm_candidate = _normalize(candidate)
+        for item in items:
+            name = item.get("name") or ""
+            norm_name = _normalize(name)
+            if len(norm_candidate) <= 2:
+                # candidato curto (ex: "ti") -> exige palavra inteira, não substring
+                words = norm_name.replace("-", " ").split()
+                match = norm_candidate in words
+            else:
+                match = norm_candidate in norm_name
+            if match:
+                print(f"  departamento encontrado: '{name}' (id={item.get('id')})")
+                return item.get("id")
+
+    print(f"  aviso: nenhum departamento parecido com '{name_filter}' foi encontrado.")
     print("  departamentos disponíveis:", [item.get("name") for item in items])
     return None
 
@@ -174,7 +199,7 @@ def extract_custom_value(ticket_detail, field_name, name_to_id):
     target_id = name_to_id.get(field_name)
 
     for cf in custom_values:
-        cf_name = cf.get("name") or cf.get("title")
+        cf_name = cf.get("name") or cf.get("title") or cf.get("label")
         cf_id = cf.get("id") or cf.get("custom_field_id")
         cf_value = cf.get("value")
         if cf_value in (None, "", []):
@@ -342,8 +367,8 @@ def main():
     if not department_id:
         print("  ATENÇÃO: seguindo sem filtro de departamento (vai trazer TODOS os chamados da conta).")
 
-    print("\n[2/5] Carregando campos personalizados...")
-    name_to_id = load_custom_field_ids()
+    print("\n[2/5] Carregando campos personalizados do departamento...")
+    name_to_id = load_custom_field_ids(department_id)
     print(f"  {len(name_to_id)} campos personalizados encontrados.")
 
     print("\n[3/5] Listando chamados (paginado, 50 por pagina)...")
