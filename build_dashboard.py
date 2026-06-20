@@ -30,9 +30,9 @@ if os.path.exists(wifi_path):
 else:
     wifi_raw = "[]"
 
-with open(os.path.join(BASE_DIR, "vendor", "chart.umd.js"), encoding="utf-8") as f:
+with open(os.path.join(BASE_DIR, "chart.umd.js"), encoding="utf-8") as f:
     chartjs = f.read()
-with open(os.path.join(BASE_DIR, "vendor", "chartjs-plugin-datalabels.js"), encoding="utf-8") as f:
+with open(os.path.join(BASE_DIR, "chartjs-plugin-datalabels.js"), encoding="utf-8") as f:
     datalabels_js = f.read()
 chartjs_full = chartjs + "\n" + datalabels_js
 
