@@ -148,7 +148,7 @@ def load_custom_field_ids(department_id):
             label = item.get("label") or item.get("name")
             field_id = item.get("id")
             if label and field_id:
-                name_to_id[label] = field_id
+                name_to_id[_normalize_field_label(label)] = field_id
 
     # 1) Campos vinculados ao departamento sem categoria definida
     result = api_get("/custom_field/department/list", {"department_id": department_id})
@@ -214,41 +214,49 @@ def find_department_id(name_filter):
 def extract_custom_value(ticket_detail, field_name, name_to_id):
     """
     Procura o valor de um campo personalizado dentro do detalhe de um chamado.
-    Tenta casar por nome diretamente, e por id como plano B.
-    Tolerante a formatos inesperados (não derruba o script).
+
+    Formato real da API: ticket_detail["custom_fields"] é um dicionário
+    {"open": [...], "closed": [...], "evaluation": [...]}, onde cada lista
+    contém objetos {"id", "label", "value"}. Os rótulos (label) vêm SEM o
+    sufixo "(Chamado Externo)" que aparecia na planilha Excel, então a
+    comparação é feita de forma normalizada (sem acento, minúsculo, sem
+    esse sufixo) para garantir o casamento correto.
     """
-    custom_values = (
-        ticket_detail.get("custom_fields")
-        or ticket_detail.get("custom_field")
-        or []
-    )
-    target_id = name_to_id.get(field_name)
+    custom_fields = ticket_detail.get("custom_fields") or {}
+    target_norm = _normalize_field_label(field_name)
+    target_id = name_to_id.get(target_norm)
 
-    # Formato A: lista de objetos [{name/label/id, value}, ...]
-    if isinstance(custom_values, list):
-        for cf in custom_values:
-            if not isinstance(cf, dict):
-                continue
-            cf_name = cf.get("name") or cf.get("title") or cf.get("label")
-            cf_id = cf.get("id") or cf.get("custom_field_id")
-            cf_value = cf.get("value")
-            if cf_value in (None, "", []):
-                continue
-            if cf_name == field_name or (target_id and cf_id == target_id):
-                if isinstance(cf_value, list):
-                    return cf_value[0] if cf_value else None
-                return cf_value
+    all_items = []
+    if isinstance(custom_fields, dict):
+        for bucket in ("open", "closed", "evaluation"):
+            all_items.extend(custom_fields.get(bucket) or [])
+    elif isinstance(custom_fields, list):
+        all_items = custom_fields
 
-    # Formato B: dicionário {"id_do_campo": valor, ...} ou {"nome": valor, ...}
-    elif isinstance(custom_values, dict):
-        if target_id and target_id in custom_values:
-            v = custom_values[target_id]
-            return v[0] if isinstance(v, list) and v else v
-        if field_name in custom_values:
-            v = custom_values[field_name]
-            return v[0] if isinstance(v, list) and v else v
-
+    for cf in all_items:
+        if not isinstance(cf, dict):
+            continue
+        cf_label = cf.get("label") or cf.get("name") or cf.get("title")
+        cf_id = cf.get("id") or cf.get("custom_field_id")
+        cf_value = cf.get("value")
+        if cf_value in (None, "", []):
+            continue
+        if (target_id and cf_id == target_id) or _normalize_field_label(cf_label) == target_norm:
+            if isinstance(cf_value, list):
+                return cf_value[0] if cf_value else None
+            return cf_value
     return None
+
+
+def _normalize_field_label(label):
+    """Remove acentos, deixa minúsculo e tira o sufixo '(Chamado Externo)'
+    para comparar nomes de campo de forma tolerante a pequenas diferenças."""
+    if not label:
+        return ""
+    norm = _normalize(label)
+    norm = norm.replace("(chamado externo)", "").strip()
+    norm = norm.rstrip("?").strip()
+    return norm
 
 
 # ============================================================
