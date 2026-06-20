@@ -1582,6 +1582,14 @@ body{
 .kpi-top{display:flex; align-items:center; justify-content:space-between;}
 .kpi-label{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color: var(--text-soft);}
 .kpi-dot{width:9px; height:9px; border-radius:50%;}
+
+.kpi-thumb{
+  display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  color:#C7CEDA; transition: color .25s ease, transform .25s ease;
+}
+.kpi-thumb svg{ display:block; }
+.kpi-thumb.thumb-good{ color: var(--green); }
+.kpi-thumb.thumb-bad{ color: var(--red); transform: scaleY(-1); }
 .kpi-value{font-family:'Space Grotesk', sans-serif; font-size:34px; font-weight:700; color: var(--navy); line-height:1.1;}
 .kpi-sub{font-size:12.5px; color: var(--text-soft);}
 
@@ -2289,22 +2297,25 @@ function animateValue(el, end, isPct, isHora){
 
 /* ====== KPI Cards ====== */
 const kpiGrid = document.getElementById('kpiGrid');
+const THUMB_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 5.5-7.5a1.5 1.5 0 0 1 2.7 1l-1 5.5h5.2a2 2 0 0 1 1.96 2.4l-1.4 7A2 2 0 0 1 18 21H9a2 2 0 0 1-2-2v-8z" fill="currentColor"/></svg>`;
 const KPI_DEFS = [
   {id:'kTotal', label:'Total de chamados', cls:'kpi-blue', emoji:'🔵'},
   {id:'kResolvidos', label:'Resolvidos', cls:'kpi-green', emoji:'🟢'},
-  {id:'kAndamento', label:'Em andamento', cls:'kpi-amber', emoji:'🟡'},
-  {id:'kAtrasados', label:'Atrasados', cls:'kpi-red', emoji:'🔴'},
-  {id:'kSlaOk', label:'SLA Resolução cumprido', cls:'kpi-green', emoji:'🟢'},
-  {id:'kSlaViol', label:'SLA Resolução violado', cls:'kpi-red', emoji:'🔴'},
-  {id:'kTmr', label:'Tempo médio resolução', cls:'kpi-amber', emoji:'🟡'},
-  {id:'kSlaIni', label:'SLA Inicialização cumprido', cls:'kpi-red', emoji:'🔴'},
-  {id:'kSat', label:'Satisfação do usuário', cls:'kpi-green', emoji:'🟢'},
+  {id:'kAndamento', label:'Em andamento', cls:'kpi-amber', emoji:'🟡', thumb:true},
+  {id:'kAtrasados', label:'Atrasados', cls:'kpi-red', emoji:'🔴', thumb:true},
+  {id:'kSlaOk', label:'SLA Resolução cumprido', cls:'kpi-green', emoji:'🟢', thumb:true},
+  {id:'kSlaViol', label:'SLA Resolução violado', cls:'kpi-red', emoji:'🔴', thumb:true},
+  {id:'kSlaIni', label:'SLA Inicialização cumprido', cls:'kpi-red', emoji:'🔴', thumb:true},
+  {id:'kSat', label:'Satisfação do usuário', cls:'kpi-green', emoji:'🟢', thumb:true},
 ];
 KPI_DEFS.forEach(k=>{
   const card = document.createElement('div');
   card.className = 'kpi-card clickable ' + k.cls;
+  const statusIcon = k.thumb
+    ? `<span class="kpi-thumb" id="${k.id}_thumb">${THUMB_SVG}</span>`
+    : `<span class="kpi-dot"></span>`;
   card.innerHTML = `
-    <div class="kpi-top"><span class="kpi-label">${k.label}</span><span class="kpi-dot"></span></div>
+    <div class="kpi-top"><span class="kpi-label">${k.label}</span>${statusIcon}</div>
     <div class="kpi-value" id="${k.id}" data-raw="0">0</div>
     <div class="kpi-sub" id="${k.id}_sub"></div>
     <span class="kpi-hint">Ver chamados →</span>
@@ -2321,7 +2332,6 @@ const DRILL_CONFIG = {
   kAtrasados: { title:'Chamados atrasados — prazo vencido', sub: t=>t.atr, sortByRes:false },
   kSlaOk:     { title:'Chamados com SLA de Resolução cumprido', sub: t=>t.slaD==='Sim', sortByRes:false },
   kSlaViol:   { title:'Chamados com SLA de Resolução violado', sub: t=>t.slaD==='Não', sortByRes:false },
-  kTmr:       { title:'Chamados por tempo de resolução (mais lentos primeiro)', sub: t=>t.fin && t.res_h!=null, sortByRes:true },
   kSlaIni:    { title:'Chamados com SLA de Inicialização violado', sub: t=>t.slaI==='Não', sortByRes:false },
   kSat:       { title:'Avaliações abaixo do ideal (Regular ou Insatisfeito)', sub: t=>t.op==='Regular'||t.op==='Insatisfeito', sortByRes:false },
 };
@@ -2772,15 +2782,30 @@ function render(){
   const satPct = avaliados.length ? (satisfeitos/avaliados.length*100) : 0;
 
   /* ---- KPI cards ---- */
+  const backlogPct = total ? (pendentes/total*100) : 0;
   setKpi('kTotal', total, false, false, `${fmtInt(total)} no filtro atual`);
   setKpi('kResolvidos', resolvidos, false, false, total ? fmtPct(resolvidos/total*100) + ' da base' : '—');
-  setKpi('kAndamento', pendentes, false, false, total ? `${fmtPct(pendentes/total*100)} da base | meta < 10%` : '—');
+  setKpi('kAndamento', pendentes, false, false, total ? `${fmtPct(backlogPct)} da base | meta < 10%` : '—');
   setKpi('kAtrasados', atrasados, false, false, pendentes ? fmtPct(atrasados/pendentes*100) + ' do backlog' : 'sem backlog');
   setKpi('kSlaOk', slaPct, true, false, `${fmtInt(slaOk)} chamados | meta > 90%`);
   setKpi('kSlaViol', 100-slaPct, true, false, `${fmtInt(slaViol)} chamados | meta < 10%`);
-  setKpi('kTmr', median, false, true, 'Mediana | meta < 8h');
   setKpi('kSlaIni', slaIniPct, true, false, `${fmtInt(slaIniOk)} chamados | meta > 70%`);
   setKpi('kSat', satPct, true, false, `${fmtInt(avaliados.length)} avaliações | meta > 90%`);
+
+  /* ---- Mãozinha (positivo/negativo) conforme meta real ---- */
+  setThumb('kAndamento', backlogPct < 10);
+  setThumb('kAtrasados', atrasados === 0);
+  setThumb('kSlaOk', slaPct >= 90);
+  setThumb('kSlaViol', (100 - slaPct) < 10);
+  setThumb('kSlaIni', slaIniPct >= 70);
+  setThumb('kSat', avaliados.length === 0 ? true : satPct >= 90);
+
+  function setThumb(id, isGood){
+    const el = document.getElementById(id+'_thumb');
+    if(!el) return;
+    el.classList.toggle('thumb-good', isGood);
+    el.classList.toggle('thumb-bad', !isGood);
+  }
 
   function setKpi(id, val, isPct, isHora, sub){
     const el = document.getElementById(id);
