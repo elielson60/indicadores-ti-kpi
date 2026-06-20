@@ -215,6 +215,7 @@ def extract_custom_value(ticket_detail, field_name, name_to_id):
     """
     Procura o valor de um campo personalizado dentro do detalhe de um chamado.
     Tenta casar por nome diretamente, e por id como plano B.
+    Tolerante a formatos inesperados (não derruba o script).
     """
     custom_values = (
         ticket_detail.get("custom_fields")
@@ -223,16 +224,30 @@ def extract_custom_value(ticket_detail, field_name, name_to_id):
     )
     target_id = name_to_id.get(field_name)
 
-    for cf in custom_values:
-        cf_name = cf.get("name") or cf.get("title") or cf.get("label")
-        cf_id = cf.get("id") or cf.get("custom_field_id")
-        cf_value = cf.get("value")
-        if cf_value in (None, "", []):
-            continue
-        if cf_name == field_name or (target_id and cf_id == target_id):
-            if isinstance(cf_value, list):
-                return cf_value[0] if cf_value else None
-            return cf_value
+    # Formato A: lista de objetos [{name/label/id, value}, ...]
+    if isinstance(custom_values, list):
+        for cf in custom_values:
+            if not isinstance(cf, dict):
+                continue
+            cf_name = cf.get("name") or cf.get("title") or cf.get("label")
+            cf_id = cf.get("id") or cf.get("custom_field_id")
+            cf_value = cf.get("value")
+            if cf_value in (None, "", []):
+                continue
+            if cf_name == field_name or (target_id and cf_id == target_id):
+                if isinstance(cf_value, list):
+                    return cf_value[0] if cf_value else None
+                return cf_value
+
+    # Formato B: dicionário {"id_do_campo": valor, ...} ou {"nome": valor, ...}
+    elif isinstance(custom_values, dict):
+        if target_id and target_id in custom_values:
+            v = custom_values[target_id]
+            return v[0] if isinstance(v, list) and v else v
+        if field_name in custom_values:
+            v = custom_values[field_name]
+            return v[0] if isinstance(v, list) and v else v
+
     return None
 
 
@@ -404,6 +419,14 @@ def main():
     records = []
     for i, ticket in enumerate(tickets, 1):
         detail = fetch_ticket_detail(ticket.get("id"))
+        if i == 1:
+            print("\n----- DIAGNÓSTICO: chaves do primeiro chamado (detail) -----")
+            if isinstance(detail, dict):
+                print(" chaves de nível superior:", list(detail.keys()))
+                cf_raw = detail.get("custom_fields") or detail.get("custom_field")
+                print(" tipo de custom_fields/custom_field:", type(cf_raw).__name__)
+                print(" conteúdo (até 1500 chars):", json.dumps(cf_raw, ensure_ascii=False)[:1500])
+            print("----- FIM DIAGNÓSTICO -----\n")
         if DEBUG_FIRST_TICKET and i == 1:
             print("\n----- DEBUG: retorno bruto do primeiro chamado -----")
             print(json.dumps(detail, ensure_ascii=False, indent=2)[:3000])
