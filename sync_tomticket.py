@@ -49,6 +49,11 @@ TOKEN = os.environ.get("TOMTICKET_TOKEN", "").strip()
 BASE_URL = "https://api.tomticket.com/v2.0"
 OUTPUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tickets.json")
 
+# Nome do departamento de TI no Tom Ticket (como aparece em Configurar Conta).
+# O script busca o ID automaticamente pelo nome — ajuste aqui se o nome
+# exato do departamento for diferente de "Informática".
+DEPARTMENT_NAME = os.environ.get("TOMTICKET_DEPARTMENT", "Informática")
+
 # Buscar só chamados criados a partir desta data (deixe None para buscar tudo)
 # Formato: "YYYY-MM-DD HH:MM:SS-0300"
 CREATION_DATE_GE = None  # ex: "2025-01-01 00:00:00-0300"
@@ -117,7 +122,7 @@ def api_get(path, params=None):
 
 def load_custom_field_ids():
     """Retorna um dict {nome_do_campo: id_do_campo}."""
-    result = api_get("/custom_field/ticket/list")
+    result = api_get("/custom_field/department/list")
     if result.get("error"):
         print("Aviso: não foi possível carregar campos personalizados:", result.get("message"))
         return {}
@@ -129,7 +134,31 @@ def load_custom_field_ids():
         field_id = item.get("id")
         if name and field_id:
             name_to_id[name] = field_id
+
+    if not name_to_id:
+        print("  aviso: nenhum campo encontrado. Resposta bruta para depuração:")
+        print(" ", json.dumps(result, ensure_ascii=False)[:800])
+
     return name_to_id
+
+
+def find_department_id(name_filter):
+    """Busca o ID do departamento cujo nome contém `name_filter` (ex: 'Informática')."""
+    result = api_get("/department/list")
+    if result.get("error"):
+        print("Aviso: não foi possível listar departamentos:", result.get("message"))
+        return None
+
+    items = result.get("data") or []
+    for item in items:
+        name = (item.get("name") or "")
+        if name_filter.lower() in name.lower():
+            print(f"  departamento encontrado: '{name}' (id={item.get('id')})")
+            return item.get("id")
+
+    print(f"  aviso: nenhum departamento com nome contendo '{name_filter}' foi encontrado.")
+    print("  departamentos disponíveis:", [item.get("name") for item in items])
+    return None
 
 
 def extract_custom_value(ticket_detail, field_name, name_to_id):
@@ -161,13 +190,15 @@ def extract_custom_value(ticket_detail, field_name, name_to_id):
 # 2) LISTAGEM DE CHAMADOS (paginado)
 # ============================================================
 
-def fetch_all_tickets():
+def fetch_all_tickets(department_id=None):
     all_tickets = []
     page = 1
     while True:
         params = {"page": page, "column": "protocol", "order": "ASC"}
         if CREATION_DATE_GE:
             params["creation_date_ge"] = CREATION_DATE_GE
+        if department_id:
+            params["department_id"] = department_id
 
         result = api_get("/ticket/list", params)
         if result.get("error"):
@@ -306,15 +337,20 @@ def main():
     print("Tom Ticket -> Painel de TI - sincronizacao")
     print("=" * 50)
 
-    print("\n[1/4] Carregando campos personalizados...")
+    print(f"\n[1/5] Localizando departamento '{DEPARTMENT_NAME}'...")
+    department_id = find_department_id(DEPARTMENT_NAME)
+    if not department_id:
+        print("  ATENÇÃO: seguindo sem filtro de departamento (vai trazer TODOS os chamados da conta).")
+
+    print("\n[2/5] Carregando campos personalizados...")
     name_to_id = load_custom_field_ids()
     print(f"  {len(name_to_id)} campos personalizados encontrados.")
 
-    print("\n[2/4] Listando chamados (paginado, 50 por pagina)...")
-    tickets = fetch_all_tickets()
+    print("\n[3/5] Listando chamados (paginado, 50 por pagina)...")
+    tickets = fetch_all_tickets(department_id)
     print(f"  Total de chamados: {len(tickets)}")
 
-    print("\n[3/4] Buscando detalhe de cada chamado (campos personalizados)...")
+    print("\n[4/5] Buscando detalhe de cada chamado (campos personalizados)...")
     records = []
     for i, ticket in enumerate(tickets, 1):
         detail = fetch_ticket_detail(ticket.get("id"))
@@ -326,7 +362,7 @@ def main():
         if i % 50 == 0 or i == len(tickets):
             print(f"  {i}/{len(tickets)} processados")
 
-    print(f"\n[4/4] Salvando {OUTPUT_FILE}...")
+    print(f"\n[5/5] Salvando {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False)
 
